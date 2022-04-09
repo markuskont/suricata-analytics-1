@@ -1,4 +1,5 @@
 .venv
 .pyenv
+.ipynb_checkpoints
 
 build/
