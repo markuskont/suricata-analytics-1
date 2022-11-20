@@ -34,9 +34,10 @@ class EveHunter(object):
         self._button_download_eve.on_click(self._download_eve)
 
         # Final app
-        self._box_app = widgets.VBox([self._text_query,
-                                      self._slider_page_size,
-                                      self._button_download_eve,
+        self._search_area = [self._text_query,
+                             self._slider_page_size,
+                             self._button_download_eve]
+        self._box_app = widgets.VBox([self._search_area,
                                       self._output_debug])
 
 
