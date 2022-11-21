@@ -8,6 +8,9 @@ from .connectors import RESTSciriusConnector
 import ipywidgets as widgets
 import pandas as pd
 
+import pickle
+import os
+
 
 class EveHunter(object):
     data: pd.DataFrame
@@ -18,6 +21,10 @@ class EveHunter(object):
 
         # Outputs
         self._output_debug = widgets.Output()
+        self._pickle_q_time = "./params.pkl"
+        if os.path.exists(self._pickle_q_time):
+            params = pickle.load(open(self._pickle_q_time, "rb"), encoding="bytes")
+            self._connector.set_query_timeframe(params["time"][0], params["time"][1])
 
         self._register_search_area()
         self._register_tabs()
@@ -32,11 +39,17 @@ class EveHunter(object):
                 self.data = self._connector.get_events_df(qfilter=self._text_query.value)
             except ConnectionError:
                 print("unable to connect to %s" % self._connector.endpoint)
+            dump = {
+                "time": (self._connector.from_date, self._connector.to_date)
+            }
+            pickle.dump(dump, open(self._pickle_q_time, "wb"))
 
     def _register_search_area(self) -> None:
         self._interactive_time_pick = widgets.interactive(self._connector.set_query_timeframe,
-                                                          from_date=widgets.DatetimePicker(description="From"),
-                                                          to_date=widgets.DatetimePicker(description="To"))
+                                                          from_date=widgets.DatetimePicker(description="From",
+                                                                                           value=self._connector.from_date),
+                                                          to_date=widgets.DatetimePicker(description="To",
+                                                                                         value=self._connector.to_date))
 
         self._slider_page_size = widgets.IntSlider(description="Document count",
                                                    min=1000,
