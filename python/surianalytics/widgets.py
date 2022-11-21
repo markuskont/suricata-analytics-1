@@ -10,7 +10,7 @@ import pandas as pd
 
 
 class EveHunter(object):
-    data: pd.DataFrame = pd.DataFrame()
+    data: pd.DataFrame
 
     def __init__(self, c=RESTSciriusConnector()) -> None:
         # Data connector to backend
