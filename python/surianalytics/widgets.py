@@ -44,6 +44,8 @@ class EveHunter(object):
             }
             pickle.dump(dump, open(self._pickle_q_time, "wb"))
 
+        self._display_aggregate_event_types()
+
     def _register_search_area(self) -> None:
         self._interactive_time_pick = widgets.interactive(self._connector.set_query_timeframe,
                                                           from_date=widgets.DatetimePicker(description="From",
@@ -64,13 +66,31 @@ class EveHunter(object):
                              self._text_query,
                              self._slider_page_size,
                              self._button_download_eve]
+        self._search_area = widgets.VBox(self._search_area)
 
     def _register_tabs(self) -> None:
         boxes = [
-            (widgets.VBox(self._search_area), "Query Events"),
+            (widgets.HBox([self._search_area, self._output_debug]), "Query Events"),
         ]
 
         self._tabs = widgets.Tab(children=[b[0] for b in boxes])
 
         for i, item in enumerate(boxes):
             self._tabs.set_title(i, item[1])
+
+    def _display_aggregate_event_types(self):
+        self._output_debug.clear_output()
+        with self._output_debug:
+            if "event_type" not in list(self.data.columns.values):
+                print("no event_type column to aggregate")
+            else:
+                df_agg = (
+                    self
+                    .data
+                    .groupby("event_type")
+                    .agg({"event_type": ["count"]})
+                )
+                if df_agg is not None:
+                    df_agg = df_agg.reset_index()
+                    df_agg.columns = ["event_type", "event_count"]
+                display(df_agg)
