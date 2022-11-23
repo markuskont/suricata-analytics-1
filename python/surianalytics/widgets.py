@@ -21,12 +21,15 @@ class EveHunter(object):
 
         # Outputs
         self._output_debug = widgets.Output()
+        self._output_data = widgets.Output()
+
         self._pickle_q_time = "./params.pkl"
         if os.path.exists(self._pickle_q_time):
             params = pickle.load(open(self._pickle_q_time, "rb"), encoding="bytes")
             self._connector.set_query_timeframe(params["time"][0], params["time"][1])
 
         self._register_search_area()
+        self._register_eve_explorer()
         self._register_tabs()
 
     def display(self) -> None:
@@ -45,6 +48,7 @@ class EveHunter(object):
             pickle.dump(dump, open(self._pickle_q_time, "wb"))
 
         self._display_aggregate_event_types()
+        self._display_raw_data()
 
     def _register_search_area(self) -> None:
         self._interactive_time_pick = widgets.interactive(self._connector.set_query_timeframe,
@@ -62,15 +66,26 @@ class EveHunter(object):
         self._button_download_eve = widgets.Button(description="Download EVE")
         self._button_download_eve.on_click(self._download_eve)
 
-        self._search_area = [self._interactive_time_pick,
-                             self._text_query,
-                             self._slider_page_size,
-                             self._button_download_eve]
-        self._search_area = widgets.VBox(self._search_area)
+        self._box_search_area = widgets.VBox([self._interactive_time_pick,
+                                              self._text_query,
+                                              self._slider_page_size,
+                                              self._button_download_eve])
+
+    def _register_eve_explorer(self) -> None:
+        self._slider_show_eve = widgets.IntSlider(min=10, max=1000)
+
+        self._interactive_explore_eve = widgets.interactive(
+            self._display_show_eve,
+            limit=self._slider_show_eve
+        )
+
+        self._box_eve_explorer = widgets.VBox([self._slider_show_eve,
+                                               self._output_data])
 
     def _register_tabs(self) -> None:
         boxes = [
-            (widgets.HBox([self._search_area, self._output_debug]), "Query Events"),
+            (widgets.HBox([self._box_search_area, self._output_debug]), "Query Events"),
+            (self._box_eve_explorer, "Expore EVE"),
         ]
 
         self._tabs = widgets.Tab(children=[b[0] for b in boxes])
@@ -94,3 +109,13 @@ class EveHunter(object):
                     df_agg = df_agg.reset_index()
                     df_agg.columns = ["event_type", "event_count"]
                 display(df_agg)
+
+    def _display_show_eve(self, limit: int):
+        pd.set_option('display.max_rows', limit)
+        pd.set_option('display.min_rows', limit)
+        self._display_raw_data()
+
+    def _display_raw_data(self) -> None:
+        self._output_data.clear_output()
+        with self._output_data:
+            display(self.data)
