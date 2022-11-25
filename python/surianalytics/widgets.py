@@ -62,7 +62,8 @@ class EveHunter(object):
             self.data = reorder_columns(self.data)
             self.data = df_parse_time_colums(self.data)
 
-            self._selection_columns.options = list(self.data.columns.values)
+            self._set_selection_values(self._selection_eve_explore_columns)
+            self._set_selection_values(self._selection_eve_explore_sort)
 
             dump = {
                 "time": (self._connector.from_date, self._connector.to_date)
@@ -100,16 +101,19 @@ class EveHunter(object):
 
     def _register_eve_explorer(self) -> None:
         self._slider_show_eve = widgets.IntSlider(min=10, max=1000)
-        self._selection_columns = widgets.SelectMultiple(description="Columns", rows=20)
+        self._selection_eve_explore_columns = widgets.SelectMultiple(description="Columns", rows=20)
+        self._selection_eve_explore_sort = widgets.SelectMultiple(description="Sort", rows=20)
 
         self._interactive_explore_eve = widgets.interactive(
             self._display_show_eve,
             limit=self._slider_show_eve,
-            columns=self._selection_columns,
+            columns=self._selection_eve_explore_columns,
+            sort=self._selection_eve_explore_sort,
         )
 
         self._box_eve_explorer = widgets.VBox([self._slider_show_eve,
-                                               self._selection_columns])
+                                               widgets.HBox([self._selection_eve_explore_columns,
+                                                             self._selection_eve_explore_sort])])
 
         self._box_eve_explorer = widgets.HBox([self._box_query_params,
                                                self._box_eve_explorer,
@@ -146,16 +150,22 @@ class EveHunter(object):
                     df_agg.columns = ["event_type", "event_count"]
                 display(df_agg)
 
-    def _display_show_eve(self, limit: int, columns: tuple):
+    def _display_show_eve(self, limit: int, columns: tuple, sort: tuple):
         pd.set_option('display.max_rows', limit)
         pd.set_option('display.min_rows', limit)
 
         cols = list(columns)
         if len(cols) == 0:
             cols = [c for c in DEFAULT_COLUMNS if c in list(self.data.columns.values)]
-            self._selection_columns.value = cols
+            self._selection_eve_explore_columns.value = cols
 
-        display_df(self.data[cols], self._output_eve_explorer)
+        sort_cols = ["timestamp"] if len(sort) == 0 else list(sort)
+
+        display_df(self.data[cols].sort_values(by=sort_cols), self._output_eve_explorer)
+
+    def _set_selection_values(self, selection: widgets.SelectMultiple) -> None:
+        if isinstance(selection.value, tuple) and len(selection.value) == 0:
+            selection.options = list(self.data.columns.values)
 
     def display(self) -> None:
         display(self._tabs)
