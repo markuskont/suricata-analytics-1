@@ -51,11 +51,13 @@ class Explorer(object):
         self._output_eve_explorer = widgets.Output()
         self._output_eve_agg = widgets.Output()
         self._output_debug = widgets.Output()
+        self._output_uniq = widgets.Output()
 
         # Containers
         self.data = pd.DataFrame()
         self.data_filtered = pd.DataFrame()
         self.data_aggregate = pd.DataFrame()
+        self.data_uniq = pd.DataFrame()
 
         self._pickle_q_time = "./params.pkl"
         if os.path.exists(self._pickle_q_time):
@@ -66,6 +68,7 @@ class Explorer(object):
         self._register_search_area()
         self._register_eve_explorer()
         self._register_eve_aggregator()
+        self._register_uniq()
         self._register_tabs()
 
     def _register_search_area(self) -> None:
@@ -148,16 +151,45 @@ class Explorer(object):
                                           self._output_eve_agg,
                                           self._output_debug])
 
+    def _register_uniq(self) -> None:
+        self._dropdown_select_field = widgets.Combobox(description="Select field",
+                                                       options=self._connector.get_unique_fields())
+
+        self._button_download_uniq = widgets.Button(description="Pull uniq")
+        self._button_download_uniq.on_click(self._download_uniq)
+
+        self._box_uniq = widgets.HBox([self._box_search_area,
+                                       widgets.VBox([self._dropdown_select_field,
+                                                     self._button_download_uniq])])
+        self._box_uniq = widgets.VBox([self._box_uniq,
+                                       self._output_uniq])
+
     def _register_tabs(self) -> None:
         boxes = [
             (self._box_eve_explorer, "Expore EVE"),
             (self._box_eve_agg, "Aggregate EVE"),
+            (self._box_uniq, "Uniq values")
         ]
 
         self._tabs = widgets.Tab(children=[b[0] for b in boxes])
 
         for i, item in enumerate(boxes):
             self._tabs.set_title(i, item[1])
+
+    def _download_uniq(self, args: None) -> None:
+        self._output_query_feedback.clear_output()
+        with self._output_query_feedback:
+            try:
+                values = self._connector.get_eve_unique_values(counts="yes",
+                                                               field=self._dropdown_select_field.value,
+                                                               qfilter=self._text_query.value)
+                self.data_uniq = pd.DataFrame(values)
+
+            except ConnectionError:
+                print("unable to connect to %s" % self._connector.endpoint)
+
+        self.data_uniq = pd.DataFrame(self.data_uniq)
+        display_df(self.data_uniq, self._output_uniq)
 
     def _download_eve(self, args: None) -> None:
         self._output_query_feedback.clear_output()
