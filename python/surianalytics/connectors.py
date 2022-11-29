@@ -183,7 +183,7 @@ class RESTSciriusConnector():
     def set_query_delta(self, hours=0, minutes=0) -> object:
         if hours == 0 and minutes == 0:
             hours = 1
-        self.to_date = datetime.utcnow()
+        self.to_date = datetime.now(timezone.utc)
         self.from_date = self.to_date - timedelta(hours=hours, minutes=minutes)
         return self
 
