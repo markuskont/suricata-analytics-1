@@ -239,6 +239,7 @@ class Explorer(object):
                                         widgets.HBox([self._dropdown_graph_node_dst,
                                                       self._slider_graph_node_agg_dst]),
                                         self._button_graph_download,
+                                        self._button_graph_draw,
                                         self._dropdown_graph_rez])
 
         self._box_graph = widgets.HBox([self._box_search_area,
@@ -359,7 +360,56 @@ class Explorer(object):
     def _display_graph(self, args) -> None:
         self._output_graph.clear_output()
         with self._output_graph:
-            pass
+            if self.data_graph is None or len(self.data_graph) == 0:
+                print("no graph data, please pull first")
+                return
+
+            # generate layout
+            pos = nx.layout.spring_layout(self.data_graph)
+
+            # parse resolution
+            rez = self._dropdown_graph_rez.value
+            if not isinstance(rez, str):
+                print("something went wrong")
+                return
+
+            rez = rez.split("x")
+            width = int(rez[0])
+            height = int(rez[1])
+
+            # locate source nodes
+            n_src = [i for i, (_, a) in enumerate(self.data_graph.nodes(data=True)) if a["kind"] == "source"]
+            # locate destination nodes
+            n_dst = [i for i, (_, a) in enumerate(self.data_graph.nodes(data=True)) if a["kind"] == "destination"]
+
+            # generate nodes per kind
+            nodes_src = hvnx.draw_networkx_nodes(self.data_graph, pos, nodelist=n_src, node_color='#A0CBE2').opts(width=width, height=height)
+            nodes_dst = hvnx.draw_networkx_nodes(self.data_graph, pos, nodelist=n_dst, node_color="Orange").opts(width=width, height=height)
+
+            # use kwargs to make parameter handling easier
+            edge_params = {
+                "alpha": 1,
+                "edge_color": 'scaled_doc_count',
+                "edge_cmap": 'viridis',
+                "edge_width": hv.dim('scaled_doc_count')*5
+            }
+            # generate edges
+            edges = (
+                hvnx
+                .draw_networkx_edges(self.data_graph, pos, **edge_params)
+                .opts(width=width, height=height)
+            )
+
+            # overlay nodes and edges
+            res = edges * nodes_src * nodes_dst
+
+            component_sizes = [len(c) for c in sorted(nx.connected_components(self.data_graph),
+                                                      key=len,
+                                                      reverse=True)
+                               if len(c) > 1]
+
+            print("Number of clusters: {}".format(len(component_sizes)))
+            display(res)
 
     def _display_aggregate_event_types(self):
         self._output_query_feedback.clear_output()
