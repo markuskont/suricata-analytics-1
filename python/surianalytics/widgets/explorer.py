@@ -19,6 +19,9 @@ import pickle
 import os
 import re
 
+from msticpy.vis.timeline import display_timeline
+from msticpy.vis.timeline_duration import display_timeline_duration
+
 
 CORE_COLUMNS = ["timestamp",
                 "flow_id",
@@ -71,6 +74,7 @@ class Explorer(object):
         self._output_uniq = widgets.Output()
         self._output_graph = widgets.Output()
         self._output_graph_feedback = widgets.Output()
+        self._output_timeline = widgets.Output()
 
         self._output_debug = widgets.Output()
 
@@ -247,12 +251,42 @@ class Explorer(object):
                                         self._output_graph,
                                         self._output_graph_feedback])
 
+    def _register_timeline(self) -> None:
+        graph_w = [r.split("x")[0] for r in GRAPH_RESOLUTIONS]
+        graph_h = [r.split("x")[1] for r in GRAPH_RESOLUTIONS]
+
+        self._dropdown_graph_w = widgets.Dropdown(
+            description="Width",
+            options=graph_w,
+            value=graph_w[1]
+        )
+        self._dropdown_graph_h = widgets.Dropdown(
+            description="Height",
+            options=graph_h,
+            value=graph_w[0]
+        )
+
+        self._button_draw_timeline = widgets.Button(description="Draw timeline")
+        self._button_draw_timeline.on_click(self._display_timeline)
+
+        self._box_timeline = widgets.VBox([self._dropdown_graph_w,
+                                           self._dropdown_graph_h,
+                                           self._select_agg_col,
+                                           self._button_graph_draw])
+
+        self._box_timeline = widgets.HBox([self._box_search_area,
+                                           self._box_timeline])
+
+        self._box_timeline = widgets.VBox([self._box_timeline,
+                                           self._output_timeline])
+
     def _register_tabs(self) -> None:
         boxes = [
             (self._box_eve_explorer, "Expore"),
             (self._box_eve_agg, "Aggregate"),
             (self._box_uniq, "Uniq"),
-            (self._box_graph, "Graph")
+            (self._box_graph, "Graph"),
+            (self._box_timeline, "Timeline")
         ]
 
         self._tabs = widgets.Tab(children=[b[0] for b in boxes])
@@ -416,6 +450,28 @@ class Explorer(object):
 
             print("Number of clusters: {}".format(len(component_sizes)))
             display(res)
+
+    def _display_timeline(self, args) -> None:
+        self._output_timeline.clear_output()
+        with self._output_timeline:
+            display_timeline(
+                self.data_filtered.fillna(""),
+                group_by=self._select_agg_col,
+                # source_columns=["src_ip", "dest_ip"],
+                time_column="timestamp",
+                legend="right",
+                width=int(self._dropdown_graph_w.value),
+                height=int(self._dropdown_graph_h.value)
+            )
+            display_timeline_duration(
+                self.data_filtered.fillna(""),
+                group_by=self._select_agg_col,
+                # source_columns=["src_ip", "dest_ip"],
+                time_column="timestamp",
+                # legend="right",
+                width=int(self._dropdown_graph_w.value),
+                height=int(self._dropdown_graph_h.value)
+            )
 
     def _display_aggregate_event_types(self):
         self._output_query_feedback.clear_output()
