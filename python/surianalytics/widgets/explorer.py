@@ -97,6 +97,7 @@ class Explorer(object):
         self._register_eve_aggregator()
         self._register_uniq()
         self._register_graph()
+        self._register_timeline()
         self._register_tabs()
 
     def _register_shared_widgets(self) -> None:
