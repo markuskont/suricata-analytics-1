@@ -15,7 +15,7 @@ services:
       SCIRIUS_ENVFILE_IN_HOME: "yes"
     volumes:
       - ${PWD}/.env:/home/jovyan/.env:ro
-      - ${PWD}:/home/jovyan/work:rw
+      - ${PWD}/:/home/jovyan/work:rw
     ports:
       - "${JUPYTER_PORT:-8888}:${JUPYTER_PORT:-8888}"
     networks:
