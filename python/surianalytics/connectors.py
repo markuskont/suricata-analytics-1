@@ -46,6 +46,8 @@ LOCAL_TZ = datetime.now(timezone(timedelta(0))).astimezone().tzinfo
 QUERY_RETROSEARCH_SNI = "event_type: tls AND tls.sni.keyword: ({domains})"
 QUERY_RETROSEARCH_HTTP_HOST = "event_type: http AND http.hostname.keyword: ({domains})"
 
+QUERY_DOMAINS = "({sni}) OR ({http})".format(sni=QUERY_RETROSEARCH_SNI, http=QUERY_RETROSEARCH_HTTP_HOST)
+
 
 class RESTSciriusConnector():
 
