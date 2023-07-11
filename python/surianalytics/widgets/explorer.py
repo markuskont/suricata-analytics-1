@@ -518,6 +518,9 @@ class Explorer(object):
         if groupby in ("", None):
             return
 
+        list_cols = (df.applymap(type) == list).any()
+        list_cols = list(list_cols.loc[list_cols].index)
+
         self.data_aggregate = (
             df
             .fillna("")
@@ -526,7 +529,7 @@ class Explorer(object):
             .agg({
                 item: ["min", "max"] if item in TIME_COLS
                 else ["unique", "nunique"]
-                for item in list(df.columns.values) if item != groupby
+                for item in list(df.columns.values) if item != groupby and item not in list_cols
             })
         )
         if self.data_aggregate is not None and not self.data_aggregate.empty:
